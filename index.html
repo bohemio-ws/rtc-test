@@ -1,53 +1,12 @@
 <!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#293e49">
-<title>RTC Academy · prueba motor estable</title>
-<style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden;background:#e9dfc9}#badge{position:fixed;z-index:99999;right:8px;bottom:8px;background:#65432c;color:#fff5df;border:1px solid #fff5df;padding:5px 8px;border-radius:5px;font:12px system-ui;opacity:.88;pointer-events:none}</style>
-</head>
-<body>
-<iframe id="rtc" src="/RTC/rtc-v060.html?known-good=066-20261020-2025" allow="microphone"></iframe>
-<div id="badge">TEST · 0.66 · FILTRO ASR</div>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#293e49"><title>RTC Academy · prueba ASR</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden;background:#e9dfc9}#badge{position:fixed;z-index:99999;right:8px;bottom:8px;background:#65432c;color:#fff5df;border:1px solid #fff5df;padding:5px 8px;border-radius:5px;font:12px system-ui;opacity:.9;pointer-events:none}</style></head>
+<body><iframe id="rtc" src="/RTC/rtc-v060.html?stable=066" allow="microphone"></iframe><div id="badge">TEST · FILTRO ASR v2</div>
 <script>
-const frame=document.getElementById('rtc');
-frame.addEventListener('load',()=>{
- const w=frame.contentWindow,d=frame.contentDocument;
+const f=document.getElementById('rtc');
+f.onload=()=>{const d=f.contentDocument;let started=0,guardTimer=0;
  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9ñ]+/g,' ').trim();
- function quality(text,seconds){
-  const words=norm(text).split(/\s+/).filter(Boolean),n=words.length;
-  if(!n)return {bad:false,n:0,wpm:0,repeat:0,reason:''};
-  const freq={};words.forEach(x=>freq[x]=(freq[x]||0)+1);
-  const top=Math.max(...Object.values(freq))/n;
-  let repeated=0;
-  for(let size=1;size<=Math.min(6,Math.floor(n/2));size++){
-   const grams={};
-   for(let i=0;i<=n-size;i++){const g=words.slice(i,i+size).join(' ');grams[g]=(grams[g]||0)+1}
-   for(const [g,c] of Object.entries(grams))if(c>=3)repeated=Math.max(repeated,(g.split(' ').length*c)/n);
-  }
-  const wpm=seconds>0?n*60/seconds:0;
-  const bad=n>=12&&(top>=.34||repeated>=.42||wpm>280);
-  return {bad,n,wpm:Math.round(wpm),repeat:Math.round(Math.max(top,repeated)*100),reason:bad?'repetición/incoherencia ASR':''};
- }
- function install(){
-  const p=d.querySelector('#ptt'),out=d.querySelector('#out'),ta=d.querySelector('#drillText'),check=d.querySelector('#checkDrill'),status=d.querySelector('#status');
-  if(!p||!out||!ta||!check||p.dataset.asrGuard)return;
-  p.dataset.asrGuard='1';let started=0;
-  p.addEventListener('pointerdown',()=>{started=performance.now()},true);
-  p.addEventListener('pointerup',()=>setTimeout(()=>{
-   const seconds=Math.max(.1,(performance.now()-started)/1000);
-   const raw=(ta.value||out.textContent||'').trim();
-   const q=quality(raw,seconds);
-   if(q.bad){
-    ta.value='';
-    if(status)status.textContent=`⚠ Transcripción ASR incoherente descartada (${q.repeat}% repetición). El intento NO se puntúa.`;
-    const fb=d.querySelector('.feedback');if(fb)fb.innerHTML=`<h3>Intento no puntuado</h3><p>El reconocedor de voz produjo una transcripción degenerada o repetitiva.</p><p><b>No se considera un error del alumno.</b> Repite la transmisión.</p>`;
-   }
-  },1150),true);
- }
- new MutationObserver(install).observe(d.documentElement,{childList:true,subtree:true});install();
-});
-</script>
-</body>
-</html>
+ function quality(text,sec){const a=norm(text).split(/\s+/).filter(Boolean),n=a.length;if(n<8)return{bad:false,n,wpm:n*60/Math.max(.1,sec),rep:0};const freq={};a.forEach(x=>freq[x]=(freq[x]||0)+1);const top=Math.max(...Object.values(freq))/n;let rep=0;for(let z=1;z<=Math.min(5,Math.floor(n/2));z++){const m={};for(let i=0;i<=n-z;i++){const g=a.slice(i,i+z).join(' ');m[g]=(m[g]||0)+1}for(const [g,c] of Object.entries(m))if(c>=3)rep=Math.max(rep,z*c/n)}const wpm=n*60/Math.max(.1,sec);return{bad:(n>=12&&(top>=.28||rep>=.35||wpm>235)),n,wpm:Math.round(wpm),rep:Math.round(Math.max(top,rep)*100)}}
+ function rejectIfBad(){const ta=d.querySelector('#drillText'),out=d.querySelector('#out'),status=d.querySelector('#status');if(!ta||!out)return;const raw=(ta.value||out.textContent||'').trim(),sec=Math.max(.1,(performance.now()-started)/1000),q=quality(raw,sec);if(!q.bad)return;ta.value='';status.textContent=`⚠ ASR incoherente: ${q.n} palabras en ${sec.toFixed(1)} s, repetición ${q.rep} %. NO se puntúa.`;const cards=[...d.querySelectorAll('.feedback')];const box=cards[cards.length-1];if(box)box.innerHTML='<h3>Intento no puntuado</h3><p>La transcripción automática es repetitiva/incoherente y no representa de forma fiable el audio.</p><p><b>No se considera un error del alumno.</b></p>'}
+ function bind(){const p=d.querySelector('#ptt');if(!p||p.dataset.guard2)return;p.dataset.guard2='1';p.addEventListener('pointerdown',()=>{started=performance.now();clearTimeout(guardTimer)},true);p.addEventListener('pointerup',()=>{clearTimeout(guardTimer);guardTimer=setTimeout(rejectIfBad,2100)},true)}
+ new MutationObserver(bind).observe(d.documentElement,{subtree:true,childList:true});bind();};
+</script></body></html>
