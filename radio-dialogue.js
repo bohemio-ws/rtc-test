@@ -6,10 +6,10 @@ window.RTC_RADIO_DIALOGUES=[
 {rx:'Aeródromo Norte tráfico, Eco Delta Alfa Bravo, viento en cola izquierda pista cero seis.',expect:'Ya en ascenso, comunica tu salida del circuito por Sierra.',reply:'Aeródromo Norte tráfico, Eco Charlie Romeo Tango Charlie, abandonando circuito por punto Sierra, en ruta.'}
 ]},
 {id:'tower_departure',title:'Torre · salida VFR y abreviación de indicativo',role:'TORRE',intro:'Primer contacto con indicativo completo. Si Torre inicia después la abreviación, puedes continuar con Romeo Tango Charlie mientras no exista riesgo de confusión.',turns:[
-{rx:'Eco Charlie Romeo Tango Charlie, Torre, mantenga posición, tráfico en final.',expect:'Primer intercambio: usa el indicativo completo y mantén posición.',reply:'Eco Charlie Romeo Tango Charlie, mantengo posición.'},
-{rx:'Romeo Tango Charlie, pista dos cuatro, autorizado a despegar, viento dos seis cero grados ocho nudos.',expect:'Torre ha iniciado la abreviación. Colaciona pista y autorización usando Romeo Tango Charlie.',reply:'Pista dos cuatro, autorizado a despegar, Romeo Tango Charlie.'},
-{rx:'Romeo Tango Charlie, después de salida notifique Sierra.',expect:'Colaciona el punto de notificación manteniendo el indicativo abreviado.',reply:'Notificaré Sierra, Romeo Tango Charlie.'},
-{rx:'Romeo Tango Charlie, recibido, continúe salida.',expect:'Cierra el intercambio de forma breve; no añadas información innecesaria.',reply:'Romeo Tango Charlie.'}
+{rx:'Eco Charlie Romeo Tango Charlie, Torre, mantenga posición, tráfico en final.',expect:'Primer intercambio: usa el indicativo completo y mantén posición.',reply:'Eco Charlie Romeo Tango Charlie, mantengo posición.',repeatRequest:['repita instrucciones','repita instruccion','repita torre','repita']},
+{rx:'Romeo Tango Charlie, pista dos cuatro, autorizado a despegar, viento dos seis cero grados ocho nudos.',expect:'Torre ha iniciado la abreviación. Colaciona pista y autorización usando Romeo Tango Charlie.',reply:'Pista dos cuatro, autorizado a despegar, Romeo Tango Charlie.',repeatRequest:['repita instrucciones romeo tango charlie','repita instrucciones rtc','repita instrucciones','repita instruccion']},
+{rx:'Romeo Tango Charlie, después de salida notifique Sierra.',expect:'Colaciona el punto de notificación manteniendo el indicativo abreviado.',reply:'Notificaré Sierra, Romeo Tango Charlie.',repeatRequest:['repita instrucciones romeo tango charlie','repita instrucciones rtc','repita instrucciones','repita instruccion']},
+{rx:'Romeo Tango Charlie, recibido, continúe salida.',expect:'Cierra el intercambio de forma breve; no añadas información innecesaria.',reply:'Romeo Tango Charlie.',repeatRequest:['repita instrucciones romeo tango charlie','repita instrucciones rtc','repita instrucciones','repita instruccion']}
 ]},
 {id:'guided_circuit',title:'Vuelo guiado · circuito y tráfico precedente',role:'TRÁFICO',intro:'Reproduce las fases viento en cola, base y final del ejercicio ilustrado. Debes escuchar, localizar al precedente y mantener separación.',turns:[
 {rx:'Aeródromo Norte tráfico, Eco Delta Alfa Bravo, viento en cola izquierda pista cero seis, número uno.',expect:'Informa tu viento en cola y que eres número dos si tienes al precedente identificado.',reply:'Aeródromo Norte tráfico, Eco Charlie Romeo Tango Charlie, viento en cola izquierda pista cero seis, número dos, tráfico precedente a la vista.'},
@@ -39,4 +39,21 @@ window.RTC_RADIO_DIALOGUES=[
 {rx:'Aeródromo Norte tráfico, Eco Delta Alfa Bravo, pista libre.',expect:'Comunica tu incorporación real.',reply:'Aeródromo Norte tráfico, Eco Charlie Romeo Tango Charlie, integrando viento en cola izquierda pista cero seis.'}
 ]}
 ];
+/* Motor aislado para radio-lab. No altera PTT ni SpeechRecognition. Genera ruido continuo
+   que puede mantenerse exactamente hasta el final de una transmisión. */
+window.RTC_RADIO_LAB={
+ isRepeatRequest(text,turn){
+  const n=String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  return !!(turn&&turn.repeatRequest&&turn.repeatRequest.some(x=>n.includes(x)));
+ },
+ startNoise(level){
+  if(!level)return()=>{};
+  try{
+   const A=window.AudioContext||window.webkitAudioContext,a=new A(),seconds=1,b=a.createBuffer(1,a.sampleRate*seconds,a.sampleRate),d=b.getChannelData(0);
+   for(let i=0;i<d.length;i++){const crack=Math.random()<.0025*level?(Math.random()-.5)*1.6:0;d[i]=(Math.random()*2-1)*(.025*level)+crack}
+   const s=a.createBufferSource(),g=a.createGain();s.buffer=b;s.loop=true;g.gain.value=.18+.055*level;s.connect(g).connect(a.destination);s.start();
+   let stopped=false;return()=>{if(stopped)return;stopped=true;try{g.gain.setTargetAtTime(0,a.currentTime,.025);s.stop(a.currentTime+.09)}catch(_){}setTimeout(()=>a.close(),180)};
+  }catch(_){return()=>{}}
+ }
+};
 })();
