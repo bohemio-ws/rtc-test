@@ -15,4 +15,6 @@ window.RTC_RADIO_DIALOGUES=[
 {rx:'Eco Charlie Romeo Tango Charlie, Eco Delta Lima, AFIRMA, te tengo a la vista.',expect:'Coordina manteniendo la maniobra reglamentaria y separación visual.',reply:'Eco Delta Lima, Eco Charlie Romeo Tango Charlie, mantengo separación visual y paso por mi derecha.'}
 ]}
 ];
+function addCulture(){const menu=document.querySelector('.menu');if(!menu||document.getElementById('morseCulture'))return;const b=document.createElement('button');b.id='morseCulture';b.innerHTML='<b>⚡ Curiosidad · Código Morse</b><br><small>De la telegrafía a las comunicaciones actuales</small>';b.onclick=()=>window.open('https://bohemio-ws.github.io/morse/','_blank','noopener');menu.appendChild(b)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addCulture);else addCulture();
 })();
